@@ -1,7 +1,12 @@
+!pip install sumy
+!pip install openpyxl
+
 import pandas as pd
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.lex_rank import LexRankSummarizer
+import nltk
+nltk.download('punkt')
 
 
 def generate_summary_and_key_sentence(text, keywords, language="spanish", sentences_count=2):
@@ -38,4 +43,4 @@ df['resumen'] = summaries
 df['oración clave'] = key_sentences
 
 # Guardar el resultado en un nuevo archivo de Excel
-df.to_excel("archivo_resumen.xlsx", index=False)
+df.to_excel("archivo_resumenvesp.xlsx", index=False)
