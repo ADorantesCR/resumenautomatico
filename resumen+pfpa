@@ -1,50 +1,41 @@
-!pip install sumy
-!pip install openpyxl
-
 import pandas as pd
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
-from sumy.summarizers.lsa import LsaSummarizer
-from sumy.utils import get_stop_words
-from openpyxl import Workbook
+from sumy.summarizers.lex_rank import LexRankSummarizer
 
-# Función para generar el resumen de una nota
-def generate_summary(text):
-    # Crear un objeto parser usando el texto de entrada
-    parser = PlaintextParser.from_string(text, Tokenizer("spanish"))
-    # Crear un objeto summarizer
-    summarizer = LsaSummarizer()
-    # Obtener las palabras de parada para español
-    stop_words = get_stop_words("spanish")
-    # Añadir las palabras de parada al summarizer
-    summarizer.stop_words = stop_words
-    # Generar un resumen de 2 oraciones
-    summary = summarizer(parser.document, 2)
-    # Unir las oraciones del resumen en un string
-    summary = " ".join(str(sentence) for sentence in summary)
-    return summary
 
-# Cargar el archivo csv con pandas
-df = pd.read_csv('archivo.csv')
+def generate_summary_and_key_sentence(text, keywords, language="spanish", sentences_count=2):
+    # Crear el parser
+    parser = PlaintextParser.from_string(text, Tokenizer(language))
+    
+    # Crear el summarizador
+    summarizer = LexRankSummarizer()
+    
+    # Obtener el resumen
+    summary = summarizer(parser.document, sentences_count)
+    summary = " ".join([str(sentence) for sentence in summary])
+    
+    # Obtener la oración que contiene la palabra clave
+    sentences = parser.document.sentences
+    key_sentence = next((sentence for sentence in sentences if any(keyword.lower() in str(sentence).lower() for keyword in keywords)), "")
 
-# Generar un resumen para cada nota en la columna 'notas' del dataframe
+    return summary, str(key_sentence)
+
+
+# Cargar los datos
+df = pd.read_csv("archivo.csv")
+
+# Obtener el resumen y la oración clave para cada nota
 summaries = []
-pfpa_sentences = []
+key_sentences = []
 for note in df['notas']:
-    summary = generate_summary(note)
+    summary, key_sentence = generate_summary_and_key_sentence(note, ["procuraduría federal de protección al ambiente", "profepa"])
     summaries.append(summary)
-    # Encontrar la oración que contiene "Procuraduría Federal de Protección al Ambiente"
-    pfpa_sentence = ""
-    for sentence in note.split("."):
-        if "Procuraduría Federal de Protección al Ambiente" in sentence:
-            pfpa_sentence = sentence.strip()
-            break
-    pfpa_sentences.append(pfpa_sentence)
-
-# Agregar los resúmenes y las oraciones de PFPA al dataframe
+    key_sentences.append(key_sentence)
+    
+# Agregar las columnas al dataframe
 df['resumen'] = summaries
-df['pfpa_oracion'] = pfpa_sentences
+df['oración clave'] = key_sentences
 
-# Guardar el dataframe en un archivo de Excel
-with pd.ExcelWriter('resumenes.xlsx') as writer:
-    df.to_excel(writer, sheet_name='Resúmenes', index=False)
+# Guardar el resultado en un nuevo archivo de Excel
+df.to_excel("archivo_resumen.xlsx", index=False)
