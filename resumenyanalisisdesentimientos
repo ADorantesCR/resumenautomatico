@@ -1,0 +1,70 @@
+!pip install sumy
+!pip install textblob
+!pip install openpyxl
+
+import pandas as pd
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.text_rank import TextRankSummarizer
+from textblob import TextBlob
+import nltk
+
+nltk.download('punkt')
+
+
+def generate_summary_and_key_sentence(text, keywords, language="spanish", sentences_count=2):
+    # Crear el parser
+    parser = PlaintextParser.from_string(text, Tokenizer(language))
+    
+    # Crear el summarizador
+    summarizer = TextRankSummarizer()
+    
+    # Obtener el resumen
+    summary = summarizer(parser.document, sentences_count)
+    summary = " ".join([str(sentence) for sentence in summary])
+    
+    # Obtener la oración que contiene la palabra clave
+    sentences = parser.document.sentences
+    key_sentence = next((sentence for sentence in sentences if any(keyword.lower() in str(sentence).lower() for keyword in keywords)), "")
+
+    return summary, str(key_sentence)
+
+
+def get_sentiment_label(sentiment_value):
+    if sentiment_value > 0.3:
+        return "Muy positivo"
+    elif sentiment_value > 0:
+        return "Positivo"
+    elif sentiment_value < -0.3:
+        return "Muy negativo"
+    elif sentiment_value < 0:
+        return "Negativo"
+    else:
+        return "Neutral"
+
+
+# Cargar los datos
+df = pd.read_csv("archivo.csv")
+
+# Obtener el resumen, la oración clave y el sentimiento para cada nota
+summaries = []
+key_sentences = []
+sentiments = []
+for note in df['notas']:
+    summary, key_sentence = generate_summary_and_key_sentence(note, ["procuraduría federal de protección al ambiente", "profepa"])
+    blob = TextBlob(note)
+    sentiment = blob.sentiment.polarity
+    summaries.append(summary)
+    key_sentences.append(key_sentence)
+    sentiments.append(sentiment)
+    
+# Agregar las columnas al dataframe
+df['resumen'] = summaries
+df['oración clave'] = key_sentences
+df['sentimiento'] = sentiments
+
+# Agregar la columna de sentimiento_label
+df['sentimiento_label'] = df['sentimiento'].apply(get_sentiment_label)
+
+# Guardar el resultado en un nuevo archivo de Excel
+df.to_excel("archivo_resumenvesp.xlsx", index=False)
