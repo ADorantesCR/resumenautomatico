@@ -1,0 +1,45 @@
+import pandas as pd
+import docx
+
+# Leer el archivo de Excel
+df = pd.read_excel('/content/archivo.xlsx')
+
+# Seleccionar las columnas necesarias
+df = df[['Título', 'Estado', 'Medio', 'URL_del_testigo', 'Transcripción']]
+
+# Buscar oraciones que contengan "procuraduría federal de protección al ambiente" y/o "profepa"
+df['Oraciones'] = df['Transcripción'].apply(lambda x: [s.strip() for s in x.split('.') if 'procuraduría federal de protección al ambiente' in s.lower() or 'profepa' in s.lower()])
+
+# Agrupar por título y obtener el primer valor de las demás columnas
+df_grouped = df.groupby(['Título']).first().reset_index()
+
+# Crear el documento de Word y establecer los márgenes y la fuente
+doc = docx.Document()
+doc.sections[0].left_margin = docx.shared.Cm(1.27)
+doc.sections[0].right_margin = docx.shared.Cm(1.27)
+doc.sections[0].top_margin = docx.shared.Cm(1.27)
+doc.sections[0].bottom_margin = docx.shared.Cm(1.27)
+
+# Definir un estilo de párrafo personalizado
+style = doc.styles.add_style('Custom', docx.enum.style.WD_STYLE_TYPE.PARAGRAPH)
+font = style.font
+font.name = 'Montserrat'
+font.size = docx.shared.Pt(12)
+font.color.rgb = docx.shared.RGBColor(0, 0, 0)
+
+# Iterar sobre los grupos y agregar la información al documento de Word
+for i, row in enumerate(df_grouped.itertuples()):
+    p = doc.add_paragraph(style='Custom')
+    p.add_run(f'{i+1}. {row.Título}\n').bold = True
+    p.add_run(f'Estado: {row.Estado}\n')
+    p.add_run(f'Medio: {row.Medio}\n')
+    p.add_run(f'URL del testigo: {row.URL_del_testigo.strip()}\n')
+
+    # Agregar las oraciones que contengan "procuraduría federal de protección al ambiente" y/o "profepa"
+    if len(row.Oraciones) > 0:
+        p.add_run('RESUMEN:\n').bold = True
+        for j, oracion in enumerate(row.Oraciones):
+            p.add_run(f'{j+1}. {oracion}\n')
+
+# Guardar el archivo de Word
+doc.save('/content/archivo.docx')
