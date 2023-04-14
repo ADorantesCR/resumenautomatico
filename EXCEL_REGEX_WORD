@@ -32,15 +32,22 @@ font.color.rgb = docx.shared.RGBColor(0, 0, 0)
 for i, row in enumerate(df_grouped.itertuples()):
     p = doc.add_paragraph(style='Custom')
     p.add_run(f'{i+1}. {row.Título}\n').bold = True
-    p.add_run(f'Estado: {row.Estado}\n')
-    p.add_run(f'Medio: {row.Medio}\n')
-    p.add_run(f'URL del testigo: {row.URL_del_testigo.strip()}\n')
-
+    
     # Agregar las oraciones que contengan "procuraduría federal de protección al ambiente" y/o "profepa"
     if len(row.Oraciones) > 0:
         p.add_run('RESUMEN:\n').bold = True
         for j, oracion in enumerate(row.Oraciones):
             p.add_run(f'{j+1}. {oracion}\n')
+    
+    # Agregar "Estado", "Medio" y "URL del testigo" en negrita
+    p.add_run('Estado: ').bold = True
+    p.add_run(f'{row.Estado}\n')
+    p.add_run('Medio: ').bold = True
+    p.add_run(f'{row.Medio}\n')
+    p.add_run('URL del testigo: ').bold = True
+    p.add_run(f'{row.URL_del_testigo.strip()}\n')
+
+
 
 # Guardar el archivo de Word
 doc.save('/content/archivo.docx')
