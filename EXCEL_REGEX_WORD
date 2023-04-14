@@ -1,5 +1,6 @@
 import pandas as pd
 import docx
+import re
 
 # Leer el archivo de Excel
 df = pd.read_excel('/content/archivo.xlsx')
@@ -7,9 +8,16 @@ df = pd.read_excel('/content/archivo.xlsx')
 # Seleccionar las columnas necesarias
 df = df[['Título', 'Estado', 'Medio', 'URL_del_testigo', 'Transcripción']]
 
-# Buscar oraciones que contengan "procuraduría federal de protección al ambiente" y/o "profepa"
-df['Oraciones'] = df['Transcripción'].apply(lambda x: [s.strip().replace('  ', ' ') for s in x.splitlines() if '-' in s or ('procuraduría federal de protección al ambiente' in s.lower() or 'profepa' in s.lower())])
-df['Oraciones'] = df['Oraciones'].apply(lambda x: [' '.join([s for s in oracion.split('-') if s.strip() != '']) for oracion in x if len(oracion) > 0])
+
+
+# Definir la expresión regular que busca las palabras clave
+regex = re.compile(r"procuradur[ií]a federal de protecci[oó]n al ambiente|profepa", re.IGNORECASE)
+
+# Buscar oraciones que contengan las palabras clave
+df['Oraciones'] = df['Transcripción'].apply(lambda x: [s.strip().replace('  ', ' ') for s in x.splitlines() if regex.search(s)])
+
+# Resto del código...
+
 
 # Agrupar por título y obtener el primer valor de las demás columnas
 df_grouped = df.groupby(['Título']).first().reset_index()
