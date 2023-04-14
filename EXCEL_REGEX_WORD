@@ -8,7 +8,8 @@ df = pd.read_excel('/content/archivo.xlsx')
 df = df[['Título', 'Estado', 'Medio', 'URL_del_testigo', 'Transcripción']]
 
 # Buscar oraciones que contengan "procuraduría federal de protección al ambiente" y/o "profepa"
-df['Oraciones'] = df['Transcripción'].apply(lambda x: [s.strip() for s in x.split('.') if 'procuraduría federal de protección al ambiente' in s.lower() or 'profepa' in s.lower()])
+df['Oraciones'] = df['Transcripción'].apply(lambda x: [s.strip().replace('  ', ' ') for s in x.splitlines() if '-' in s or ('procuraduría federal de protección al ambiente' in s.lower() or 'profepa' in s.lower())])
+df['Oraciones'] = df['Oraciones'].apply(lambda x: [' '.join([s for s in oracion.split('-') if s.strip() != '']) for oracion in x if len(oracion) > 0])
 
 # Agrupar por título y obtener el primer valor de las demás columnas
 df_grouped = df.groupby(['Título']).first().reset_index()
